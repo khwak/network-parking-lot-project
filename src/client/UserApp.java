@@ -217,14 +217,38 @@ public class UserApp extends JFrame {
                         }
 
                         // 2. 결제 완료 처리 (화면이 어디에 있든 팝업은 떠야 함)
+                        // [수정된 부분] 결제 신호 수신 시 바로 완료 처리하지 않고, 선택창을 띄움
                         if (msg.equals(Protocol.MSG_PAYMENT)) {
-                            // 혹시 길 안내 중이어도 결제 알림이 오면 출차 화면으로 강제 이동시킬지 선택 가능
-                            // cardLayout.show(mainContainer, "EXIT");
+                            // 1. 사용자에게 결제 방식 물어보기 (팝업창)
+                            int choice = JOptionPane.showOptionDialog(
+                                    UserApp.this,
+                                    "출차 차량이 감지되었습니다.\n등록된 '자동 결제' 수단으로 결제하시겠습니까?", // 내용
+                                    "결제 방식 선택", // 제목
+                                    JOptionPane.YES_NO_OPTION, // 버튼 종류 (예/아니오)
+                                    JOptionPane.QUESTION_MESSAGE, // 아이콘 모양
+                                    null,
+                                    new Object[]{"예 (자동 결제)", "아니오 (다른 수단)"}, // 버튼 글자 커스텀
+                                    "예 (자동 결제)" // 기본 선택값
+                            );
 
-                            JOptionPane.showMessageDialog(UserApp.this,
-                                    "자동 결제가 완료되었습니다.\n안녕히 가십시오 (출차 가능)",
-                                    "결제 알림",
-                                    JOptionPane.INFORMATION_MESSAGE);
+                            // 2. 선택에 따른 처리
+                            if (choice == JOptionPane.YES_OPTION) {
+                                // [자동 결제 선택 시]
+                                // 실제로는 여기서 서버에 "자동결제 진행해줘"라는 패킷을 보내야 하지만,
+                                // 지금은 완료되었다고 가정하고 메시지를 띄웁니다.
+                                JOptionPane.showMessageDialog(UserApp.this,
+                                        "등록된 카드로 결제가 완료되었습니다.\n안녕히 가십시오 (출차 가능)",
+                                        "결제 성공",
+                                        JOptionPane.INFORMATION_MESSAGE);
+
+                            } else {
+                                // [다른 수단 선택 시]
+                                // 현장 결제나 다른 앱 결제를 유도하는 메시지
+                                JOptionPane.showMessageDialog(UserApp.this,
+                                        "자동 결제가 취소되었습니다.\n출구 정산기에서 직접 결제해주세요.",
+                                        "일반 결제 전환",
+                                        JOptionPane.WARNING_MESSAGE);
+                            }
                         }
                     });
                 }
