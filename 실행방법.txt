@@ -1,0 +1,10 @@
+실행방법
+
+1. ChatServer.java 실행
+   -> Server 지정
+   -> Client 생성 (서버 IP 지정)
+
+2. Chatting 실행
+
+
+ClientThread.java : 
