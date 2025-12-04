@@ -9,4 +9,8 @@ public class Protocol {
 
     // 종료 메시지
     public static final String CMD_EXIT = "/quit";
+
+    // 결제 수단 관련
+    public static final String NOTI_NEED_PAYMENT = "NOTI:NEED_PAYMENT"; // 결제 수단 없음 알림
+    public static final String REQ_REG_PAYMENT = "REQ:REG_PAYMENT:";    // 결제 수단 등록 요청
 }
