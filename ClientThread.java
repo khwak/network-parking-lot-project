@@ -160,7 +160,7 @@ public class ClientThread extends Thread {
 
                 // 수동 이동 기능 (필요하다면 유지)
                 if (line.startsWith("/move")) {
-                    os.println("좌표 입력됨. 이동 처리합니다.");
+                    os.println("좌표 입력됨. 이동 처리합니다!");
                     continue; 
                 }
 
