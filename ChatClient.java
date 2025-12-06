@@ -102,8 +102,10 @@ public class ChatClient {
             ActionListener sendListener = new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
                     String str = inputTextField.getText();
-                    if (str != null && str.trim().length() > 0)
+                    if (str != null && str.trim().length() > 0) {
                         chatAccess.send(str);
+                        // 서버에서 echo back 하므로 화면 표시 불필요
+                    }
                     inputTextField.selectAll();
                     inputTextField.requestFocus();
                     inputTextField.setText("");

@@ -1,10 +1,5 @@
-½ÇÇà¹æ¹ı
+ì„œë²„ ëª…ë ¹ì–´
+`java ChatServer`
 
-1. ChatServer.java ½ÇÇà
-   -> Server ÁöÁ¤
-   -> Client »ı¼º (¼­¹ö IP ÁöÁ¤)
-
-2. Chatting ½ÇÇà
-
-
-ClientThread.java : 
+í´ë¼ì´ì–¸íŠ¸ ëª…ë ¹ì–´
+ `java "-Dfile.encoding=UTF-8"  ChatClient 127.0.0.1 8888`
