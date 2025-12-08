@@ -34,11 +34,12 @@ public class UserApp extends JFrame {
         setLocationRelativeTo(null); // 화면 가운데 띄우기
 
         // 2. 로그인 (차량 번호 입력)
-        // 프로그램 시작하자마자 입력을 받습니다.
-        myCarNum = JOptionPane.showInputDialog(this, "차량 번호를 입력하세요:", "로그인", JOptionPane.QUESTION_MESSAGE);
+        myCarNum = JOptionPane.showInputDialog(this,
+                "차량 번호를 입력하세요:\n(1000~1999: 교수 / 2000~2999: 학생 / 그외: 방문객)",
+                "주차 시스템 로그인", JOptionPane.QUESTION_MESSAGE);
 
         if (myCarNum == null || myCarNum.trim().isEmpty()) {
-            System.exit(0); // 취소하거나 빈 값이면 종료
+            System.exit(0);
         }
 
         // 3. 서버 연결 시도
