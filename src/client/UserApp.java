@@ -66,7 +66,7 @@ public class UserApp extends JFrame {
         setVisible(true);
     }
 
-    // --- [화면 1] 메인 메뉴 패널 생성 ---
+    // [화면 1] 메인 메뉴 패널 생성
     private JPanel createMenuPanel() {
         JPanel panel = new JPanel(new GridLayout(3, 1, 10, 10)); // 3행 1열
         panel.setBorder(BorderFactory.createEmptyBorder(50, 50, 50, 50)); // 여백
@@ -100,7 +100,7 @@ public class UserApp extends JFrame {
         return panel;
     }
 
-    // --- [화면 2] 출차/결제 패널 (기존 작성하신 코드) ---
+    // [화면 2] 출차/결제 패널
     private JPanel createExitPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -134,26 +134,51 @@ public class UserApp extends JFrame {
         return panel;
     }
 
-    // --- [화면 3] 길 안내 패널 (팀원이 작업할 공간) ---
+    // [화면 3] 길 안내 패널
+    private JTextArea navLogArea; // 로그 출력용
+
     private JPanel createNavigationPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
-        JLabel tempLabel = new JLabel("길 안내 기능 준비 중입니다...", SwingConstants.CENTER);
-        tempLabel.setFont(new Font("돋움", Font.BOLD, 15));
+        // 상단: 안내 문구
+        JLabel titleLabel = new JLabel("실시간 주차 길 안내 서비스", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("맑은 고딕", Font.BOLD, 18));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
 
-        // 테스트용: 메뉴로 돌아가는 버튼
-        JButton btnBack = new JButton("메뉴로 돌아가기");
+        // 중앙: 주행 로그/지도 화면 (팀원의 ChatFrame ui 참고)
+        navLogArea = new JTextArea();
+        navLogArea.setEditable(false);
+        navLogArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
+        navLogArea.setText("안내 시작 버튼을 누르면\n서버로부터 경로를 수신합니다.\n\n");
+        panel.add(new JScrollPane(navLogArea), BorderLayout.CENTER);
+
+        // 하단: 조작 버튼
+        JPanel bottomPanel = new JPanel(new FlowLayout());
+
+        JButton btnStart = new JButton("안내 시작");
+        JButton btnBack = new JButton("메인 메뉴");
+
+        // [이벤트] 안내 시작 버튼 -> 서버에 "REQ:NAV" 전송
+        btnStart.addActionListener(e -> {
+            if (os != null) {
+                navLogArea.setText("[System] 경로 탐색 요청 중...\n");
+                os.println(Protocol.REQ_NAV); // 서버로 요청 전송
+            }
+        });
+
+        // [이벤트] 메인 메뉴 복귀
         btnBack.addActionListener(e -> cardLayout.show(mainContainer, "MENU"));
 
-        panel.add(tempLabel, BorderLayout.CENTER);
-        panel.add(btnBack, BorderLayout.SOUTH);
+        bottomPanel.add(btnStart);
+        bottomPanel.add(btnBack);
 
-        // TODO: 나중에 팀원이 코드를 주면 이 panel 내부를 팀원 코드로 채워넣으면 됩니다.
+        panel.add(titleLabel, BorderLayout.NORTH);
+        panel.add(bottomPanel, BorderLayout.SOUTH);
 
         return panel;
     }
 
-    // --- 네트워크 및 기능 로직 (기존과 동일) ---
+    // 네트워크 및 기능 로직
 
     private void connectToServer() {
         String host = "10.101.17.50";
@@ -214,6 +239,31 @@ public class UserApp extends JFrame {
                         if (chatArea != null) {
                             chatArea.append("[Server] " + msg + "\n");
                             chatArea.setCaretPosition(chatArea.getDocument().getLength());
+                        }
+
+                        // 길 안내 로그 (길 안내 화면용)
+                        // NAV:COORD:10,20 형태의 메시지가 오면 파싱해서 출력
+                        if (msg.startsWith(Protocol.NAV_COORD)) {
+                            String coords = msg.split(":")[2]; // "10,20" 추출
+                            if (navLogArea != null) {
+                                navLogArea.append("🚗 자율 주행 중... 현재 좌표: (" + coords + ")\n");
+                                navLogArea.setCaretPosition(navLogArea.getDocument().getLength());
+                            }
+                        }
+                        // 도착 메시지 처리
+                        else if (msg.equals(Protocol.NAV_END)) {
+                            if (navLogArea != null) {
+                                navLogArea.append("🏁 목적지에 도착하여 주차를 완료했습니다.\n");
+                                JOptionPane.showMessageDialog(UserApp.this, "주차가 완료되었습니다!");
+                            }
+                        }
+                        // 그 외 일반 메시지는 로그창에 띄움
+                        else if (!msg.startsWith(Protocol.LOGIN_USER) && navLogArea != null) {
+                            // (서버가 보내는 일반 텍스트 메시지도 길안내 로그에 표시)
+                            // 단, LPR 관련 메시지 등은 제외하고 싶으면 조건 추가 가능
+                            if(!msg.startsWith("NOTI:")) {
+                                navLogArea.append(msg + "\n");
+                            }
                         }
 
                         // 2. 결제 완료 처리 (화면이 어디에 있든 팝업은 떠야 함)

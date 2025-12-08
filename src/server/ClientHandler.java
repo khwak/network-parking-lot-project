@@ -95,10 +95,11 @@ public class ClientHandler extends Thread {
                         this.os.println("[Server] User with car number " + targetCarNum + " is not connected.");
                     }
                 }
-                // [User 로직] 유저가 서버에 뭔가 보낸 경우 (필요 시 구현)
-                else if ("USER".equals(this.role)) {
-                    // 예: 하트비트나 상태 확인 등
-                    System.out.println("[Msg from User " + this.carNum + "] " + line);
+                // [길 안내] 유저가 길 안내를 요청했을 때 ("REQ:NAV")
+                else if ("USER".equals(this.role) && line.equals(Protocol.REQ_NAV)) {
+                    System.out.println("[Log] User " + this.carNum + " requested navigation.");
+                    // 서버가 바쁘지 않게 별도 스레드로 시뮬레이션 시작
+                    new Thread(this::simulateNavigation).start();
                 }
             }
 
@@ -129,6 +130,49 @@ public class ClientHandler extends Thread {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+    // [길 안내] 자율주행 시뮬레이션 로직
+    private void simulateNavigation() {
+        try {
+            // 1. 목적지 설정 (팀원 코드의 "교수/학생" 로직을 단순화하여 적용)
+            // 차량 번호가 짝수면 '교수(본관)', 홀수면 '학생(명신관)'으로 가정해봅시다.
+            String targetName;
+            int destX, destY;
+
+            // 간단히 차번호 끝자리를 이용해 분류
+            char lastChar = carNum.charAt(carNum.length() - 1);
+            if ((lastChar - '0') % 2 == 0) {
+                targetName = "본관(교수 연구동)";
+                destX = 50; destY = 100;
+            } else {
+                targetName = "명신관(강의동)";
+                destX = -30; destY = 40;
+            }
+
+            os.println("[Server] " + targetName + "으로 안내를 시작합니다. (IoT 센서 연동 중...)");
+            Thread.sleep(1000); // 준비 시간
+
+            // 2. 주행 시뮬레이션 (팀원 코드의 for 루프 활용)
+            for (int i = 1; i <= 5; i++) {
+                // 1.5초 딜레이 (이동하는 느낌)
+                Thread.sleep(1500);
+
+                // 현재 위치 계산 (선형 보간)
+                int curX = (destX / 5) * i;
+                int curY = (destY / 5) * i;
+
+                // 클라이언트에게 좌표 전송 (프로토콜: "NAV:COORD:X,Y")
+                os.println(Protocol.NAV_COORD + curX + "," + curY);
+            }
+
+            // 3. 도착 알림
+            Thread.sleep(1000);
+            os.println("[Server] 목적지 도착: " + targetName);
+            os.println(Protocol.NAV_END); // 종료 신호
+
+        } catch (InterruptedException e) {
+            System.out.println("[Error] Navigation interrupted.");
         }
     }
 }
