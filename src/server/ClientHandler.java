@@ -1,8 +1,6 @@
 package server;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.Socket;
 import utils.Protocol;
 
@@ -10,7 +8,7 @@ public class ClientHandler extends Thread {
     private String role = null;    // 역할: "LPR" 또는 "USER"
     private String carNum = null;  // 유저일 경우 차량 번호
 
-    private DataInputStream is = null;
+    private BufferedReader reader = null;
     private PrintStream os = null;
     private Socket clientSocket = null;
     private final ClientHandler[] threads; // 전체 접속자 관리용 배열 참조
@@ -28,11 +26,11 @@ public class ClientHandler extends Thread {
 
         try {
             // 입출력 스트림 생성
-            is = new DataInputStream(clientSocket.getInputStream());
-            os = new PrintStream(clientSocket.getOutputStream());
+            reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream(), "UTF-8"));
+            os = new PrintStream(clientSocket.getOutputStream(), true, "UTF-8");
 
             // 1. 로그인 (Handshake) 처리
-            String loginMsg = is.readLine();
+            String loginMsg = reader.readLine();
             if (loginMsg == null) return; // 바로 끊긴 경우
             loginMsg = loginMsg.trim();
 
@@ -59,7 +57,7 @@ public class ClientHandler extends Thread {
 
             // 2. 메시지 수신 및 처리 루프
             while (true) {
-                String line = is.readLine();
+                String line = reader.readLine();
 
                 // 연결이 끊어지거나 종료 명령 수신 시 루프 탈출
                 if (line == null || line.startsWith(Protocol.CMD_EXIT)) {
@@ -67,6 +65,22 @@ public class ClientHandler extends Thread {
                 }
 
                 line = line.trim();
+
+                // [길 안내] 관리자 신고 기능
+                if (line.startsWith("/report")) {
+                    String content = line.replace("/report", "").trim();
+                    os.println("[Server] 신고가 접수되었습니다. (내용: " + content + ")");
+                    System.out.println("[Report] From " + carNum + ": " + content);
+
+                    // (선택사항) 접속한 모든 사람에게 알림을 띄우고 싶다면:
+                    // broadcast("[공지] " + carNum + "님이 신고를 접수했습니다.");
+                }
+
+                // [길 안내] 긴급 도움 요청
+                else if (line.startsWith("/help")) {
+                    os.println("[Server] 🚨 긴급 요청 확인! 보안요원이 출동합니다.");
+                    System.out.println("[Emergency] Help requested by " + carNum);
+                }
 
                 // [LPR 로직] 차량 인식 메시지가 온 경우 ("DETECT:1234")
                 if ("LPR".equals(this.role) && line.startsWith(Protocol.DETECT_CAR)) {
@@ -95,10 +109,11 @@ public class ClientHandler extends Thread {
                         this.os.println("[Server] User with car number " + targetCarNum + " is not connected.");
                     }
                 }
-                // [User 로직] 유저가 서버에 뭔가 보낸 경우 (필요 시 구현)
-                else if ("USER".equals(this.role)) {
-                    // 예: 하트비트나 상태 확인 등
-                    System.out.println("[Msg from User " + this.carNum + "] " + line);
+                // [길 안내] 유저가 길 안내를 요청했을 때 ("REQ:NAV")
+                else if ("USER".equals(this.role) && line.equals(Protocol.REQ_NAV)) {
+                    System.out.println("[Log] User " + this.carNum + " requested navigation.");
+                    // 서버가 바쁘지 않게 별도 스레드로 시뮬레이션 시작
+                    new Thread(this::simulateNavigation).start();
                 }
             }
 
@@ -123,12 +138,60 @@ public class ClientHandler extends Thread {
 
             // 소켓 및 스트림 닫기
             try {
-                if (is != null) is.close();
+                if (reader != null) reader.close();
                 if (os != null) os.close();
                 if (clientSocket != null) clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+    // [길 안내] 자율주행 시뮬레이션 로직
+    private void simulateNavigation() {
+        try {
+            // 1. ParkingManager를 통해 자리 배정
+            // (차 번호 끝자리가 짝수면 교수 구역, 홀수면 학생 구역으로 가정)
+            char lastChar = (carNum != null) ? carNum.charAt(carNum.length() - 1) : '1';
+            boolean isProfessor = (lastChar - '0') % 2 == 0;
+
+            String targetName = isProfessor ? "본관(교수 연구동)" : "명신관(강의동)";
+            int destX = isProfessor ? 50 : -30;
+            int destY = isProfessor ? 100 : 40;
+
+            os.println("[System] " + targetName + "으로 안내를 시작합니다.");
+            Thread.sleep(1000);
+
+            // 2. 출발 멘트 (팀원 코드 반영)
+            os.println("🚗 주차장 입구에서 출발합니다.");
+            os.println("⏱️ 예상 소요 시간: 10초");
+            Thread.sleep(1500);
+
+            // 3. 주행 시뮬레이션 (좌표 + 멘트 전송)
+            for (int i = 1; i <= 5; i++) {
+                // 팀원의 상세 멘트 로직 이식
+                if (i == 2) {
+                    if (isProfessor) os.println("➡️ 20m 앞 본관 방향으로 우회전하세요.");
+                    else os.println("⬅️ 15m 앞 명신관 방향으로 좌회전하세요.");
+                }
+                if (i == 4) {
+                    os.println("⚠️ 곧 주차 구역입니다. 속도를 줄이세요.");
+                }
+
+                Thread.sleep(1500); // 이동 시간
+
+                // 좌표 계산 및 전송 (UserApp 화면 표시용)
+                int curX = (destX / 5) * i;
+                int curY = (destY / 5) * i;
+                os.println(Protocol.NAV_COORD + curX + "," + curY);
+            }
+
+            // 4. 도착 처리
+            Thread.sleep(1000);
+            os.println("🎉 목적지 도착! 안전하게 주차되었습니다.");
+            os.println(Protocol.NAV_END);
+
+        } catch (InterruptedException e) {
+            System.out.println("[Error] Navigation interrupted.");
         }
     }
 }
