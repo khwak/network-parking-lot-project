@@ -30,7 +30,7 @@ public class UserApp extends JFrame {
         setLocationRelativeTo(null);
 
         myCarNum = JOptionPane.showInputDialog(this,
-                "차량 번호를 입력하세요:\n(1000~1999: 교수 / 2000~2999: 학생 / 그외: 방문객)",
+                "차량 번호를 입력하세요.",
                 "주차 시스템 로그인", JOptionPane.QUESTION_MESSAGE);
 
         if (myCarNum == null || myCarNum.trim().isEmpty()) {
@@ -135,11 +135,20 @@ public class UserApp extends JFrame {
         });
 
         btnReport.addActionListener(e -> {
-            String input = JOptionPane.showInputDialog(this, "신고 내용을 입력하세요:");
-            if(input != null && !input.trim().isEmpty()) {
-                os.println("/report " + input);
-                chatArea.append("[Me] (🚨신고) " + input + "\n");
+            String input = inputField.getText(); // 1. 채팅창 내용을 가져옴
+
+            // 내용이 비어있으면 안내창 띄우기
+            if (input.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "신고할 내용을 입력창에 먼저 적어주세요.");
+                return;
             }
+
+            // 2. 서버로 신고 접수 (내용과 함께)
+            os.println("/report " + input);
+            chatArea.append("[Me] (🚨신고) " + input + "\n");
+
+            // 3. 입력창 비우기
+            inputField.setText("");
         });
 
         return panel;
@@ -214,6 +223,13 @@ public class UserApp extends JFrame {
             JOptionPane.showMessageDialog(UserApp.this, "출구 정산기를 이용해주세요.");
         }
         isWaitingForPayment = false;
+
+        //결제 후 초기 화면으로 이동
+        //다음 이용을 위해 채팅창 내용 초기화
+        chatArea.setText("");
+
+        // 화면을 'MENU' (초기 접속 화면) 카드로 전환
+        cardLayout.show(mainContainer, "MENU");
     }
 
     class ReceiveThread extends Thread {
