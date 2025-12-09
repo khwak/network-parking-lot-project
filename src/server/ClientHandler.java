@@ -60,6 +60,8 @@ public class ClientHandler extends Thread {
             if (loginMsg.startsWith(Protocol.LOGIN_LPR)) {
                 this.role = "LPR";
                 os.println("[System] LPR Camera connected.");
+
+                System.out.println("[Server] LPR Camera connected!");
             } else if (loginMsg.startsWith(Protocol.LOGIN_USER)) {
                 this.role = "USER";
                 if (loginMsg.split(":").length > 2) {
@@ -126,6 +128,8 @@ public class ClientHandler extends Thread {
                         os.println("   (나가시려면 '채팅방 퇴장'을 입력하세요)");
                         os.println("========================================");
                         broadcast("📢 [" + carNum + "] 님이 채팅방에 입장하셨습니다.");
+
+                        System.out.println("[Chat] User " + carNum + " entered the chat room.");
                         continue;
                     }
 
@@ -137,6 +141,7 @@ public class ClientHandler extends Thread {
                         } else {
                             os.println("[System] 현재 채팅방에 있지 않습니다.");
                         }
+                        System.out.println("[Chat] User " + carNum + " left the chat room.");
                         continue;
                     }
 
@@ -146,6 +151,8 @@ public class ClientHandler extends Thread {
                         if (line.startsWith("/help")) {
                             os.println("🆘 긴급 요청이 전송되었습니다. 관리자가 출동합니다.");
                             broadcast("🚨 [긴급] 차번 " + carNum + " 님이 도움을 요청했습니다!");
+
+                            System.out.println("[Chat/Help] " + carNum + " requested help!");
                         }
                         // 2) 신고 (/report)
                         else if (line.startsWith("/report")) {
@@ -153,12 +160,15 @@ public class ClientHandler extends Thread {
                             os.println("✅ 신고가 접수되었습니다.");
                             // 관리자 혹은 전체에게 알림 (익명성 보장을 위해 차번은 가리거나 표시 선택)
                             broadcast("👮 [신고 접수] " + content);
+
+                            System.out.println("[Chat/Report] " + carNum + ": " + content);
                         }
                         // 3) 일반 대화
                         else {
                             // 내 화면엔 이미 찍혔으므로, 다른 사람들에게만 전송
                             // 팀원 코드 포맷: <이름> 메시지
                             broadcast("<" + carNum + "> " + line);
+                            System.out.println("[Chat] " + carNum + ": " + line);
                         }
                     }
 
